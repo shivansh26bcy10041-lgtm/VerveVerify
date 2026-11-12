@@ -55,64 +55,256 @@ def qr_url(code: str) -> str:
 # ================= CUSTOM CSS =================
 st.markdown("""
 <style>
-    .stApp { background: #0e1117; }
-    .hero {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 55%, #f093fb 100%);
-        border-radius: 20px; padding: 34px 28px; text-align: center;
-        color: white; margin-bottom: 22px; box-shadow: 0 8px 32px rgba(118, 75, 162, 0.4);
-    }
-    .hero h1 { margin: 0; font-size: 2.6em; letter-spacing: 2px; }
-    .hero p { margin: 8px 0 0; font-size: 1.1em; opacity: 0.9; }
-    .tier {
-        border-radius: 14px; padding: 14px 8px; text-align: center;
-        background: #1a2030; border: 2px solid #2a3245;
-        transition: all 0.3s ease; color: #8892b0;
-    }
-    .tier .pct { font-size: 1.9em; font-weight: 800; color: #4a5568; }
-    .tier .rng { font-size: 0.78em; margin-top: 4px; }
-    .tier.active {
-        background: linear-gradient(135deg, #11998e, #38ef7d);
-        border-color: #38ef7d; color: white;
-        box-shadow: 0 0 24px rgba(56, 239, 125, 0.45); transform: scale(1.06);
-    }
-    .tier.active .pct { color: white; }
-    .save-banner {
-        background: linear-gradient(90deg, #f7971e, #ffd200);
-        border-radius: 12px; padding: 14px 18px; text-align: center;
-        font-weight: 700; color: #3b2708; font-size: 1.05em; margin: 10px 0;
-    }
-    .save-banner.none { background: #2a3245; color: #8892b0; }
-    .ticket {
-        background: linear-gradient(145deg, #1e2a4a, #16213e);
-        border-radius: 18px; padding: 0; overflow: hidden;
-        border: 1px solid #3a4a6b; max-width: 400px; margin: 0 auto;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-    }
-    .ticket-top {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        padding: 18px; text-align: center; color: white;
-    }
-    .ticket-top h3 { margin: 0; letter-spacing: 3px; }
-    .ticket-body { padding: 20px; text-align: center; color: #e0e6f0; }
-    .ticket-qr {
-        background: white; border-radius: 12px; padding: 10px;
-        display: inline-block; margin: 10px 0;
-    }
-    .ticket-row {
-        display: flex; justify-content: space-between;
-        padding: 8px 6px; border-bottom: 1px dashed #3a4a6b; font-size: 0.95em;
-    }
-    .ticket-row:last-child { border-bottom: none; }
-    .ticket-row .lbl { color: #8892b0; }
-    .ticket-row .val { font-weight: 700; }
-    .verdict {
-        border-radius: 20px; padding: 50px 30px; text-align: center;
-        font-size: 1.6em; font-weight: 800; margin: 20px 0;
-    }
-    .verdict.ok { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
-    .verdict.bad { background: linear-gradient(135deg, #cb2d3e, #ef473a); color: white; }
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+    --bg: #090b16;
+    --panel: rgba(20, 25, 45, 0.78);
+    --border: rgba(255, 255, 255, 0.12);
+    --muted: #a6aecb;
+    --pink: #ff64c8;
+    --purple: #9b7bff;
+    --cyan: #67e8f9;
+}
+
+.stApp {
+    background:
+        radial-gradient(ellipse at 10% 5%, rgba(118, 75, 162, .25), transparent 35%),
+        radial-gradient(ellipse at 90% 18%, rgba(255, 100, 200, .14), transparent 30%),
+        radial-gradient(ellipse at 50% 100%, rgba(65, 105, 225, .16), transparent 40%),
+        var(--bg);
+    color: #f6f7ff;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.block-container {
+    max-width: 920px;
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+}
+
+h1, h2, h3 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    color: #fff;
+}
+
+.hero {
+    position: relative;
+    overflow: hidden;
+    padding: 44px 24px;
+    margin-bottom: 28px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 28px;
+    text-align: center;
+    color: white;
+    background:
+        linear-gradient(120deg, rgba(102,126,234,.95), rgba(118,75,162,.92) 55%, rgba(240,147,251,.88));
+    box-shadow: 0 18px 60px rgba(118,75,162,.28);
+}
+.hero:before {
+    content: "✦";
+    position: absolute;
+    left: 9%;
+    top: 15%;
+    font-size: 2rem;
+    opacity: .5;
+    animation: float 4s ease-in-out infinite;
+}
+.hero:after {
+    content: "✧";
+    position: absolute;
+    right: 10%;
+    bottom: 12%;
+    font-size: 2.8rem;
+    opacity: .6;
+    animation: float 5s ease-in-out infinite reverse;
+}
+.hero h1 {
+    margin: 0;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    letter-spacing: 2px;
+    text-shadow: 0 4px 20px rgba(0,0,0,.2);
+}
+.hero p {
+    margin: 10px 0 0;
+    font-size: 1.08rem;
+    opacity: .94;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(8deg); }
+}
+
+.stButton > button, .stDownloadButton > button {
+    min-height: 48px;
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 14px;
+    color: white;
+    font-weight: 700;
+    background: linear-gradient(100deg, #7865f5, #b553dc);
+    box-shadow: 0 8px 24px rgba(120,101,245,.24);
+    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+.stButton > button:hover, .stDownloadButton > button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.12);
+    box-shadow: 0 12px 30px rgba(181,83,220,.34);
+    border-color: rgba(255,255,255,.4);
+}
+.stButton > button:active, .stDownloadButton > button:active {
+    transform: scale(.98);
+}
+
+.stTextInput input, .stNumberInput input {
+    border-radius: 12px !important;
+    background: rgba(255,255,255,.06) !important;
+    color: white !important;
+    border: 1px solid var(--border) !important;
+}
+div[data-baseweb="select"] > div {
+    background: rgba(255,255,255,.06);
+}
+
+div[data-testid="stMetric"] {
+    padding: 14px;
+    border-radius: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+}
+
+.tier {
+    min-height: 92px;
+    border-radius: 17px;
+    padding: 15px 7px;
+    text-align: center;
+    background: rgba(255,255,255,.045);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    transition: transform .22s ease, background .22s ease, box-shadow .22s ease;
+}
+.tier:hover {
+    transform: translateY(-4px);
+    background: rgba(255,255,255,.09);
+}
+.tier .pct {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #d1d5e8;
+}
+.tier .rng {
+    margin-top: 5px;
+    font-size: .75rem;
+    line-height: 1.25;
+}
+.tier.active {
+    color: white;
+    border: 1px solid rgba(255,255,255,.55);
+    background: linear-gradient(145deg, rgba(17,153,142,.96), rgba(56,239,125,.85));
+    box-shadow: 0 0 26px rgba(56,239,125,.25);
+    transform: translateY(-4px) scale(1.03);
+}
+.tier.active .pct { color: white; }
+
+.save-banner {
+    padding: 17px 18px;
+    margin: 14px 0;
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 16px;
+    text-align: center;
+    color: #22172a;
+    font-size: 1.03rem;
+    background: linear-gradient(100deg, #ffd166, #ff9f68, #ff78c8);
+    box-shadow: 0 10px 30px rgba(255,120,200,.15);
+}
+.save-banner.none {
+    color: #d8def5;
+    background: rgba(255,255,255,.07);
+}
+
+.ticket {
+    max-width: 430px;
+    margin: 12px auto;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 22px;
+    background: linear-gradient(145deg, rgba(30,42,74,.98), rgba(16,20,40,.98));
+    box-shadow: 0 18px 50px rgba(0,0,0,.35);
+}
+.ticket-top {
+    padding: 20px;
+    text-align: center;
+    color: white;
+    background: linear-gradient(120deg, #667eea, #9b55bd, #ed72c5);
+}
+.ticket-top h3 {
+    margin: 0;
+    color: white;
+    letter-spacing: 2px;
+}
+.ticket-body {
+    padding: 20px;
+    text-align: center;
+    color: #e0e6f0;
+}
+.ticket-qr {
+    display: inline-block;
+    margin: 8px 0 14px;
+    padding: 10px;
+    border-radius: 14px;
+    background: white;
+}
+.ticket-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 6px;
+    border-bottom: 1px dashed rgba(255,255,255,.17);
+    font-size: .95rem;
+}
+.ticket-row:last-child { border-bottom: none; }
+.ticket-row .lbl { color: #a6aecb; }
+.ticket-row .val { font-weight: 700; }
+
+.verdict {
+    margin: 20px 0;
+    padding: 42px 24px;
+    border-radius: 22px;
+    text-align: center;
+    font-size: 1.55rem;
+    font-weight: 800;
+}
+.verdict.ok {
+    color: white;
+    background: linear-gradient(130deg, #11998e, #38ef7d);
+}
+.verdict.bad {
+    color: white;
+    background: linear-gradient(130deg, #cb2d3e, #ef473a);
+}
+
+section[data-testid="stSidebar"] {
+    background: rgba(12, 15, 29, .9);
+    border-right: 1px solid var(--border);
+}
+.stProgress > div > div > div > div {
+    background: linear-gradient(90deg, #67e8f9, #9b7bff, #ff64c8);
+}
+.stCaption, [data-testid="stCaptionContainer"] {
+    color: #a6aecb;
+}
+
+@media (max-width: 640px) {
+    .block-container { padding-left: 1rem; padding-right: 1rem; }
+    .hero { padding: 34px 16px; border-radius: 22px; }
+    .tier { min-height: 84px; padding: 12px 4px; }
+    .tier .pct { font-size: 1.45rem; }
+    .tier .rng { font-size: .66rem; }
+}
 </style>
 """, unsafe_allow_html=True)
+
 
 # ================= HELPERS =================
 TIERS = [
@@ -123,17 +315,27 @@ TIERS = [
 ]
 
 def tier_cards(cgpa: float):
-    active_idx = 3
-    if cgpa > 9.5: active_idx = 0
-    elif cgpa > 9.0: active_idx = 1
-    elif cgpa > 8.5: active_idx = 2
+    if cgpa > 9.5:
+        active_idx = 0
+    elif cgpa > 9.0:
+        active_idx = 1
+    elif cgpa > 8.5:
+        active_idx = 2
+    else:
+        active_idx = 3
+
     cols = st.columns(4)
     for i, (pct, rng) in enumerate(TIERS):
-        cls = "tier active" if i == active_idx else "tier"
+        active = i == active_idx
+        cls = "tier active" if active else "tier"
+        badge = "<div style='font-size:.65rem;margin-top:5px'>YOUR TIER</div>" if active else ""
         cols[i].markdown(
-            f'<div class="{cls}"><div class="pct">{pct}</div><div class="rng">{rng}</div></div>',
+            f'<div class="{cls}">'
+            f'<div class="pct">{pct}</div>'
+            f'<div class="rng">{rng}</div>{badge}</div>',
             unsafe_allow_html=True,
         )
+
 
 def ticket_card(code: str, discount: int, price_paid: float, cgpa: float, qr_b64: str):
     st.markdown(f"""
