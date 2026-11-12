@@ -8,7 +8,7 @@ from io import BytesIO
 
 # ================= CONFIG =================
 DB = "tickets.db"
-APP_URL = "https://VerveVerify.streamlit.app"   # ← EXACT live URL from your browser bar (no underscores allowed!)
+APP_URL = "https://verveverify.streamlit.app"   # ← MUST match your browser bar EXACTLY (lowercase, no underscores)
 FEST_NAME = "AURORA'26"
 FEST_TAGLINE = "One Night. Zero Regrets. ✨"
 VOLUNTEER_PASSWORD = st.secrets.get("VOLUNTEER_PASSWORD", "FEST2026")  # set real value in Cloud Secrets
@@ -46,6 +46,15 @@ def make_qr_b64(url: str) -> str:
     buf = BytesIO()
     qrcode.make(url).save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode()
+
+def make_qr_bytes(url: str) -> bytes:
+    """QR as raw PNG bytes for download buttons."""
+    buf = BytesIO()
+    qrcode.make(url).save(buf, format="PNG")
+    return buf.getvalue()
+
+def qr_url(code: str) -> str:
+    return f"{APP_URL}/?page=verify&code={code}"
 
 # ================= CUSTOM CSS =================
 st.markdown("""
@@ -156,7 +165,20 @@ def ticket_card(code: str, discount: int, price_paid: float, cgpa: float, qr_b64
     """, unsafe_allow_html=True)
     st.caption("📸 Screenshot this · Show the QR at the entrance")
 
-# ================= VERIFICATION VIEW =================
+def download_qr_button(code: str):
+    """Reusable download button so buyers keep a copy of their ticket."""
+    qr_bytes = make_qr_bytes(qr_url(code))
+    st.download_button(
+        label="⬇️ Download QR Ticket (PNG)",
+        data=qr_bytes,
+        file_name=f"aurora26_ticket_{code[:8]}.png",
+        mime="image/png",
+        use_container_width=True,
+    )
+    st.info("💾 Save this PNG to your gallery — it works even without internet, "
+            "the volunteer just needs to scan it.", icon="📸")
+
+# ================= VERIFICATION VIEW (VOLUNTEER) =================
 params = st.query_params
 if params.get("page") == "verify":
     code = params.get("code", "")
@@ -177,18 +199,46 @@ if params.get("page") == "verify":
     st.markdown('<div class="hero"><h1>🛡️ Gate Check</h1><p>Scan result for this ticket</p></div>',
                 unsafe_allow_html=True)
 
-    # --- Atomic check-and-mark ---
-    if st.button("✅ Check & Grant Entry", type="primary", use_container_width=True):
+    # --- Manual code entry fallback (QR wouldn't scan / student reads it out) ---
+    if not code:
+        st.info("📷 No code in URL — enter it manually (e.g. student read it out or QR wouldn't scan)")
+        code = st.text_input("Ticket code", placeholder="paste or type ticket code").strip()
+
+    if code:
+        # --- Preview ticket details BEFORE granting entry ---
         with sqlite3.connect(DB) as conn:
-            cur = conn.execute(
-                "UPDATE tickets SET used = 1 WHERE ticket_code = ? AND used = 0", (code,))
-            conn.commit()
-            if cur.rowcount == 1:
-                st.session_state.verdict = "ok"
-            else:
-                row = conn.execute(
-                    "SELECT used FROM tickets WHERE ticket_code = ?", (code,)).fetchone()
-                st.session_state.verdict = "none" if row is None else "used"
+            row = conn.execute(
+                "SELECT cgpa, discount, price_paid, used FROM tickets WHERE ticket_code = ?",
+                (code,)).fetchone()
+
+        if row:
+            t_cgpa, t_disc, t_price, t_used = row
+            status = "🟢 NOT USED" if t_used == 0 else "🔴 ALREADY USED"
+            st.markdown(f"""
+            <div class="ticket">
+              <div class="ticket-top"><h3>🎫 Ticket Details</h3></div>
+              <div class="ticket-body">
+                <div class="ticket-row"><span class="lbl">Code</span><span class="val">{code[:13]}…</span></div>
+                <div class="ticket-row"><span class="lbl">CGPA</span><span class="val">{t_cgpa:.2f}</span></div>
+                <div class="ticket-row"><span class="lbl">Discount</span><span class="val">{t_disc}% OFF</span></div>
+                <div class="ticket-row"><span class="lbl">Paid</span><span class="val">₹ {t_price:.2f}</span></div>
+                <div class="ticket-row"><span class="lbl">Status</span><span class="val">{status}</span></div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # --- Atomic check-and-mark ---
+        if st.button("✅ Check & Grant Entry", type="primary", use_container_width=True,
+                     disabled=(row is None)):
+            with sqlite3.connect(DB) as conn:
+                cur = conn.execute(
+                    "UPDATE tickets SET used = 1 WHERE ticket_code = ? AND used = 0", (code,))
+                conn.commit()
+                if cur.rowcount == 1:
+                    st.session_state.verdict = "ok"
+                else:
+                    r = conn.execute("SELECT used FROM tickets WHERE ticket_code = ?", (code,)).fetchone()
+                    st.session_state.verdict = "none" if r is None else "used"
 
     # --- Verdict display (persists across reruns / refreshes) ---
     v = st.session_state.get("verdict")
@@ -199,6 +249,35 @@ if params.get("page") == "verify":
         st.markdown('<div class="verdict bad">⛔ ALREADY USED<br>Deny Entry</div>', unsafe_allow_html=True)
     elif v == "none":
         st.markdown('<div class="verdict bad">❌ INVALID<br>No such ticket</div>', unsafe_allow_html=True)
+    st.stop()
+
+# ================= MY TICKET VIEW (BUYER RECOVERY) =================
+if params.get("page") == "myticket":
+    st.markdown('<div class="hero"><h1>🎫 My Ticket</h1><p>Retrieve your pass anytime</p></div>',
+                unsafe_allow_html=True)
+
+    lookup = st.text_input("Enter your ticket code", placeholder="e.g. 3f2a9c1e-...")
+    if st.button("🔍 Find My Ticket", type="primary", use_container_width=True):
+        with sqlite3.connect(DB) as conn:
+            row = conn.execute(
+                "SELECT ticket_code, cgpa, discount, price_paid, used FROM tickets WHERE ticket_code = ?",
+                (lookup.strip(),)).fetchone()
+        if row is None:
+            st.error("❌ No ticket found with that code. Check for typos.")
+        else:
+            code, t_cgpa, t_disc, t_price, t_used = row
+            st.session_state.my_ticket = code
+            st.session_state.purchase = {"discount": t_disc, "final": t_price}
+            st.session_state.my_cgpa = t_cgpa
+            st.success("✅ Ticket found!" + (" (Already checked in)" if t_used else ""))
+
+    if "my_ticket" in st.session_state and st.session_state.get("purchase"):
+        info = st.session_state["purchase"]
+        qr_b64 = make_qr_b64(qr_url(st.session_state.my_ticket))
+        ticket_card(st.session_state.my_ticket,
+                    info["discount"], info["final"],
+                    st.session_state.get("my_cgpa", 0.0), qr_b64)
+        download_qr_button(st.session_state.my_ticket)
     st.stop()
 
 # ================= MAIN / PURCHASE VIEW =================
@@ -215,6 +294,7 @@ with st.sidebar:
     st.header("📊 Live Stats")
     with sqlite3.connect(DB) as conn:
         sold = conn.execute("SELECT COUNT(*) FROM tickets").fetchone()[0]
+        given = conn.execute("SELECT")
         given = conn.execute("SELECT COALESCE(SUM(price_paid),0) FROM tickets").fetchone()[0]
         entered = conn.execute("SELECT COUNT(*) FROM tickets WHERE used = 1").fetchone()[0]
     c1, c2 = st.columns(2)
@@ -266,6 +346,7 @@ if st.button("🛒 Buy Ticket Now", type="primary", use_container_width=True):
                    VALUES (?, ?, ?, ?, ?, ?)""",
                 (code, device_id, cgpa, discount, final_price, datetime.now().isoformat()))
         st.session_state.my_ticket = code
+        st.session_state.my_cgpa = cgpa
         st.session_state.purchase = {"discount": discount, "final": final_price}
         st.toast("Ticket booked successfully! 🎉")
         st.balloons()
@@ -276,8 +357,9 @@ if "my_ticket" in st.session_state:
     info = st.session_state.get("purchase")
     if info:
         st.success(f"✅ Payment confirmed — {info['discount']}% off, paid ₹ {info['final']:.2f}")
-    qr_b64 = make_qr_b64(f"{APP_URL}/?page=verify&code={st.session_state.my_ticket}")
+    qr_b64 = make_qr_b64(qr_url(st.session_state.my_ticket))
     ticket_card(st.session_state.my_ticket,
                 info["discount"] if info else 0,
                 info["final"] if info else 0,
-                cgpa, qr_b64)
+                st.session_state.get("my_cgpa", cgpa), qr_b64)
+    download_qr_button(st.session_state.my_ticket)
