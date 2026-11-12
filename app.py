@@ -8,21 +8,18 @@ from io import BytesIO
 
 # ================= CONFIG =================
 DB = "tickets.db"
-APP_URL = "https://verveverify.streamlit.app"   # ← MUST match your browser bar EXACTLY (lowercase, no underscores)
+APP_URL = "https://verveverify.streamlit.app"   # ← REPLACE with YOUR EXACT URL from browser bar
 FEST_NAME = "AURORA'26"
 FEST_TAGLINE = "One Night. Zero Regrets. ✨"
-VOLUNTEER_PASSWORD = st.secrets.get("VOLUNTEER_PASSWORD", "FEST2026")  # set real value in Cloud Secrets
+VOLUNTEER_PASSWORD = st.secrets.get("VOLUNTEER_PASSWORD", "FEST2026")
 
 st.set_page_config(page_title=f"{FEST_NAME} · Tickets", page_icon="🎟️", layout="centered")
 
 # ================= CORE LOGIC =================
 def calculate_discount(cgpa: float) -> int:
-    if cgpa > 9.5:
-        return 20
-    elif cgpa > 9.0:
-        return 15
-    elif cgpa > 8.5:
-        return 10
+    if cgpa > 9.5: return 20
+    elif cgpa > 9.0: return 15
+    elif cgpa > 8.5: return 10
     return 0
 
 @st.cache_resource
@@ -48,7 +45,6 @@ def make_qr_b64(url: str) -> str:
     return base64.b64encode(buf.getvalue()).decode()
 
 def make_qr_bytes(url: str) -> bytes:
-    """QR as raw PNG bytes for download buttons."""
     buf = BytesIO()
     qrcode.make(url).save(buf, format="PNG")
     return buf.getvalue()
@@ -60,16 +56,13 @@ def qr_url(code: str) -> str:
 st.markdown("""
 <style>
     .stApp { background: #0e1117; }
-
     .hero {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 55%, #f093fb 100%);
         border-radius: 20px; padding: 34px 28px; text-align: center;
-        color: white; margin-bottom: 22px;
-        box-shadow: 0 8px 32px rgba(118, 75, 162, 0.4);
+        color: white; margin-bottom: 22px; box-shadow: 0 8px 32px rgba(118, 75, 162, 0.4);
     }
     .hero h1 { margin: 0; font-size: 2.6em; letter-spacing: 2px; }
     .hero p { margin: 8px 0 0; font-size: 1.1em; opacity: 0.9; }
-
     .tier {
         border-radius: 14px; padding: 14px 8px; text-align: center;
         background: #1a2030; border: 2px solid #2a3245;
@@ -80,18 +73,15 @@ st.markdown("""
     .tier.active {
         background: linear-gradient(135deg, #11998e, #38ef7d);
         border-color: #38ef7d; color: white;
-        box-shadow: 0 0 24px rgba(56, 239, 125, 0.45);
-        transform: scale(1.06);
+        box-shadow: 0 0 24px rgba(56, 239, 125, 0.45); transform: scale(1.06);
     }
     .tier.active .pct { color: white; }
-
     .save-banner {
         background: linear-gradient(90deg, #f7971e, #ffd200);
         border-radius: 12px; padding: 14px 18px; text-align: center;
         font-weight: 700; color: #3b2708; font-size: 1.05em; margin: 10px 0;
     }
     .save-banner.none { background: #2a3245; color: #8892b0; }
-
     .ticket {
         background: linear-gradient(145deg, #1e2a4a, #16213e);
         border-radius: 18px; padding: 0; overflow: hidden;
@@ -115,13 +105,12 @@ st.markdown("""
     .ticket-row:last-child { border-bottom: none; }
     .ticket-row .lbl { color: #8892b0; }
     .ticket-row .val { font-weight: 700; }
-
     .verdict {
         border-radius: 20px; padding: 50px 30px; text-align: center;
         font-size: 1.6em; font-weight: 800; margin: 20px 0;
     }
-    .verdict.ok   { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
-    .verdict.bad  { background: linear-gradient(135deg, #cb2d3e, #ef473a); color: white; }
+    .verdict.ok { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
+    .verdict.bad { background: linear-gradient(135deg, #cb2d3e, #ef473a); color: white; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -134,23 +123,19 @@ TIERS = [
 ]
 
 def tier_cards(cgpa: float):
-    """Render the 4 tier cards, highlighting the one the user currently unlocks."""
     active_idx = 3
-    if cgpa > 9.5:   active_idx = 0
+    if cgpa > 9.5: active_idx = 0
     elif cgpa > 9.0: active_idx = 1
     elif cgpa > 8.5: active_idx = 2
-
     cols = st.columns(4)
     for i, (pct, rng) in enumerate(TIERS):
         cls = "tier active" if i == active_idx else "tier"
         cols[i].markdown(
-            f'<div class="{cls}"><div class="pct">{pct}</div>'
-            f'<div class="rng">{rng}</div></div>',
+            f'<div class="{cls}"><div class="pct">{pct}</div><div class="rng">{rng}</div></div>',
             unsafe_allow_html=True,
         )
 
 def ticket_card(code: str, discount: int, price_paid: float, cgpa: float, qr_b64: str):
-    """Render a real-ticket-style card with the QR embedded."""
     st.markdown(f"""
     <div class="ticket">
       <div class="ticket-top"><h3>🎟️ {FEST_NAME} 🎟️</h3></div>
@@ -166,7 +151,6 @@ def ticket_card(code: str, discount: int, price_paid: float, cgpa: float, qr_b64
     st.caption("📸 Screenshot this · Show the QR at the entrance")
 
 def download_qr_button(code: str):
-    """Reusable download button so buyers keep a copy of their ticket."""
     qr_bytes = make_qr_bytes(qr_url(code))
     st.download_button(
         label="⬇️ Download QR Ticket (PNG)",
@@ -175,15 +159,12 @@ def download_qr_button(code: str):
         mime="image/png",
         use_container_width=True,
     )
-    st.info("💾 Save this PNG to your gallery — it works even without internet, "
-            "the volunteer just needs to scan it.", icon="📸")
+    st.info("💾 Save this PNG to your gallery — it works even without internet.", icon="📸")
 
 # ================= VERIFICATION VIEW (VOLUNTEER) =================
 params = st.query_params
 if params.get("page") == "verify":
     code = params.get("code", "")
-
-    # --- Volunteer login ---
     if "volunteer_ok" not in st.session_state:
         st.markdown(f'<div class="hero"><h1>🛡️ Gate Check</h1><p>{FEST_NAME} staff access</p></div>',
                     unsafe_allow_html=True)
@@ -199,13 +180,11 @@ if params.get("page") == "verify":
     st.markdown('<div class="hero"><h1>🛡️ Gate Check</h1><p>Scan result for this ticket</p></div>',
                 unsafe_allow_html=True)
 
-    # --- Manual code entry fallback (QR wouldn't scan / student reads it out) ---
     if not code:
-        st.info("📷 No code in URL — enter it manually (e.g. student read it out or QR wouldn't scan)")
+        st.info("📷 No code in URL — enter it manually")
         code = st.text_input("Ticket code", placeholder="paste or type ticket code").strip()
 
     if code:
-        # --- Preview ticket details BEFORE granting entry ---
         with sqlite3.connect(DB) as conn:
             row = conn.execute(
                 "SELECT cgpa, discount, price_paid, used FROM tickets WHERE ticket_code = ?",
@@ -227,7 +206,6 @@ if params.get("page") == "verify":
             </div>
             """, unsafe_allow_html=True)
 
-        # --- Atomic check-and-mark ---
         if st.button("✅ Check & Grant Entry", type="primary", use_container_width=True,
                      disabled=(row is None)):
             with sqlite3.connect(DB) as conn:
@@ -240,7 +218,6 @@ if params.get("page") == "verify":
                     r = conn.execute("SELECT used FROM tickets WHERE ticket_code = ?", (code,)).fetchone()
                     st.session_state.verdict = "none" if r is None else "used"
 
-    # --- Verdict display (persists across reruns / refreshes) ---
     v = st.session_state.get("verdict")
     if v == "ok":
         st.markdown('<div class="verdict ok">✅ VALID<br>Entry Granted</div>', unsafe_allow_html=True)
@@ -274,8 +251,7 @@ if params.get("page") == "myticket":
     if "my_ticket" in st.session_state and st.session_state.get("purchase"):
         info = st.session_state["purchase"]
         qr_b64 = make_qr_b64(qr_url(st.session_state.my_ticket))
-        ticket_card(st.session_state.my_ticket,
-                    info["discount"], info["final"],
+        ticket_card(st.session_state.my_ticket, info["discount"], info["final"],
                     st.session_state.get("my_cgpa", 0.0), qr_b64)
         download_qr_button(st.session_state.my_ticket)
     st.stop()
@@ -294,7 +270,6 @@ with st.sidebar:
     st.header("📊 Live Stats")
     with sqlite3.connect(DB) as conn:
         sold = conn.execute("SELECT COUNT(*) FROM tickets").fetchone()[0]
-        given = conn.execute("SELECT")
         given = conn.execute("SELECT COALESCE(SUM(price_paid),0) FROM tickets").fetchone()[0]
         entered = conn.execute("SELECT COUNT(*) FROM tickets WHERE used = 1").fetchone()[0]
     c1, c2 = st.columns(2)
