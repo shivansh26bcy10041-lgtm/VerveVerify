@@ -1,0 +1,109 @@
+<div align="center">
+
+# 🎟️ Smart College Fest Ticketing System
+
+**A secure, automated, and fraud-proof ticketing platform built for college fests.**
+
+[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+*Developed for the VIT Bhopal Poster Presentation & Technical Fest (SamVITya)*
+
+</div>
+
+---
+
+## 📖 Table of Contents
+- [Problem Statement](#-problem-statement)
+- [Our Solution](#-our-solution)
+- [Key Features](#-key-features)
+- [System Architecture](#-system-architecture)
+- [Database Schema](#-database-schema)
+- [Tech Stack](#-tech-stack)
+- [Local Setup & Installation](#-local-setup--installation)
+- [How to Test the Application (Demo Guide)](#-how-to-test-the-application-demo-guide)
+- [Future Scope](#-future-scope)
+- [Team](#-team)
+
+---
+
+## 🚨 Problem Statement
+
+College fests frequently struggle with managing ticketing logistics due to three main bottlenecks:
+1.  **Manual CGPA Verification:** Verifying student academic scores to apply tiered discounts is a manual, error-prone process that creates massive queues.
+2.  **Ticket Fraud & Duplication:** Static QR codes are easily screenshotted and shared on messaging apps, leading to unauthorized entries and revenue loss.
+3.  **System Overload & Double Entries:** Without atomic database locking, volunteers scanning tickets at the gate can accidentally grant entry to the same ticket multiple times during network lag.
+
+---
+
+## 💡 Our Solution
+
+We developed a **Smart Ticketing Platform** using Python and Streamlit that acts as a complete Event Security and Access Management System.
+
+Instead of manual checks, students interact with a dynamic CGPA slider that instantly applies the correct discount tier (20%, 15%, 10%, or 0%) and generates a secure ticket. At the gate, a password-protected volunteer portal uses **atomic SQL queries** to guarantee a ticket can only be scanned *once*. The system requires zero manual math and completely eliminates double-entry fraud.
+
+---
+
+## ✨ Key Features
+
+*   **🎯 Automated Discount Engine:** Real-time calculation of ticket prices based on a mock CGPA verification slider. Visual indicators show the exact savings to the student.
+*   **🔒 Fraud Prevention (Device Binding):** Utilizes Python's `uuid` library to lock a ticket to a specific user session. A single device cannot purchase multiple tickets.
+*   **🛡️ Gate Verification Portal:** A dedicated, password-protected routing (`?page=verify`) for fest volunteers. 
+*   **⚡ Atomic SQL Locking:** Prevents race conditions. The database query `UPDATE tickets SET used = 1 WHERE ticket_code = ? AND used = 0` ensures that even if two volunteers scan the same ticket simultaneously, only one entry is granted.
+*   **📊 Live Admin Analytics:** A real-time dashboard for the Student Welfare Office showing tickets sold, total revenue collected, and current check-in rates.
+*   **🎨 Dynamic UI/UX:** Custom CSS implementations render a real-ticket-style digital pass with a Base64 embedded QR code, alongside clear green/red verdict screens for gate staff.
+
+---
+
+## 🏗️ System Architecture
+
+1.  **User Interaction (Streamlit):** The student adjusts their CGPA slider and clicks "Buy".
+2.  **Session & Device Lock:** The app generates a unique `UUID` for the user's session and checks the database to ensure they don't already own a ticket.
+3.  **QR Generation:** A unique ticket code is generated, inserted into the database, and converted into a Base64 QR image on the screen.
+4.  **Gate Verification:** A volunteer logs into the secure portal, scans the QR, and triggers the atomic SQL verification function.
+
+---
+
+## 🗄️ Database Schema (SQLite)
+
+The core of the security lies in the `tickets` table structure:
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | INTEGER | Primary Key (Auto-increment) |
+| `ticket_code` | TEXT | Unique UUID string for the ticket |
+| `device_id` | TEXT | UUID binding the ticket to the user's session |
+| `cgpa` | REAL | Stores the CGPA used at the time of purchase |
+| `discount` | INTEGER | Percentage discount applied (20, 15, 10, 0) |
+| `price_paid` | REAL | Final transaction amount |
+| `used` | INTEGER | Binary state (0 = Unused, 1 = Checked-in) |
+| `created_at` | TEXT | Timestamp of purchase |
+
+---
+
+## 🛠️ Tech Stack
+
+*   **Backend / Frontend:** [Streamlit](https://streamlit.io/) (Python)
+*   **Database:** [SQLite](https://www.sqlite.org/index.html) (via built-in `sqlite3`)
+*   **QR Generation:** `qrcode` & `Pillow` (PIL)
+*   **Security:** `uuid`, Streamlit Secrets (Environment variables)
+*   **Data Handling:** `base64`, `io` (In-memory image processing)
+
+---
+
+## 🚀 Local Setup & Installation
+
+Follow these steps to run the project on your local machine.
+
+### Prerequisites
+*   Python 3.9 or higher installed.
+*   Git installed.
+
+### Installation Steps
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+    cd YOUR_REPO_NAME
